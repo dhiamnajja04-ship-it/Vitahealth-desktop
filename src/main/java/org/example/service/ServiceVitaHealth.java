@@ -42,7 +42,7 @@ public class ServiceVitaHealth {
         return null;
     }
 
-    // READ
+    // READ - User
     public User getUserById(int id) throws SQLException {
         return userDAO.findById(id);
     }
@@ -59,7 +59,7 @@ public class ServiceVitaHealth {
         return userDAO.getAllMedecins();
     }
 
-    // UPDATE
+    // UPDATE - User
     public void updateUser(User user) throws SQLException {
         userDAO.update(user);
     }
@@ -68,26 +68,56 @@ public class ServiceVitaHealth {
         userDAO.updateHealthParameters(patientId, poids, taille, glycemie, tension);
     }
 
-    // DELETE
+    // DELETE - User
     public void deleteUser(int id) throws SQLException {
         userDAO.delete(id);
     }
 
-    // ========== Appointment ==========
+    // ========== Appointment CRUD ==========
     public void prendreRendezVous(Appointment rdv) throws SQLException {
         appointmentDAO.ajouter(rdv);
     }
 
+    public List<Appointment> getRdvByPatient(int patientId) throws SQLException {
+        return appointmentDAO.getRdvByPatient(patientId);
+    }
+
+    public List<Appointment> getRdvByMedecin(int medecinId) throws SQLException {
+        return appointmentDAO.getRdvByMedecin(medecinId);
+    }
+
+    public void updateAppointmentStatus(int rdvId, String status) throws SQLException {
+        appointmentDAO.updateStatus(rdvId, status);
+    }
+
     // ========== IA Recommandation ==========
     public String getRecommendationIA(User patient) {
+        StringBuilder recommandation = new StringBuilder();
+
         if (patient.getPoids() != null && patient.getTaille() != null) {
             double imc = patient.getPoids() / (patient.getTaille() * patient.getTaille());
-            if (imc > 25) return "IMC élevé, pensez à l'exercice.";
-            if (imc < 18.5) return "IMC bas, surveillez votre alimentation.";
+            if (imc > 25) {
+                recommandation.append("⚠️ IMC élevé (").append(String.format("%.1f", imc)).append(") : Pensez à faire plus d'exercice. ");
+            } else if (imc < 18.5) {
+                recommandation.append("⚠️ IMC bas (").append(String.format("%.1f", imc)).append(") : Surveillez votre alimentation. ");
+            } else {
+                recommandation.append("✅ IMC normal (").append(String.format("%.1f", imc)).append("). ");
+            }
         }
-        if (patient.getGlycemie() != null && patient.getGlycemie() > 1.26) {
-            return "Glycémie élevée, consultez votre médecin.";
+
+        if (patient.getGlycemie() != null) {
+            if (patient.getGlycemie() > 1.26) {
+                recommandation.append("🩸 Glycémie élevée (").append(patient.getGlycemie()).append(") : Consultez votre médecin. ");
+            } else if (patient.getGlycemie() < 0.70) {
+                recommandation.append("🩸 Glycémie basse (").append(patient.getGlycemie()).append(") : Mangez quelque chose de sucré. ");
+            } else {
+                recommandation.append("✅ Glycémie normale. ");
+            }
         }
-        return "Tous vos paramètres sont bons !";
+
+        if (recommandation.length() == 0) {
+            return "✅ Tous vos paramètres sont bons ! Continuez ainsi.";
+        }
+        return recommandation.toString();
     }
 }

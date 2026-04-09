@@ -51,6 +51,30 @@ public class AppointmentDAO {
         return rdvs;
     }
 
+    public List<Appointment> getRdvByMedecin(int medecinId) throws SQLException {
+        List<Appointment> rdvs = new ArrayList<>();
+        // Récupère les rendez-vous d'un médecin avec les infos du patient
+        String sql = "SELECT a.Id, a.patient_id, a.doctor_id, a.date, a.reason, a.status, u.first_name, u.last_name " +
+                "FROM appointment a JOIN user u ON a.patient_id = u.id " +
+                "WHERE a.doctor_id = ? ORDER BY a.date DESC";
+        try (PreparedStatement pstmt = DatabaseConnection.getConnection().prepareStatement(sql)) {
+            pstmt.setInt(1, medecinId);
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                Appointment rdv = new Appointment();
+                rdv.setId(rs.getInt("Id"));
+                rdv.setPatientId(rs.getInt("patient_id"));
+                rdv.setDoctorId(rs.getInt("doctor_id"));
+                rdv.setDate(rs.getTimestamp("date").toLocalDateTime());
+                rdv.setReason(rs.getString("reason"));
+                rdv.setStatus(rs.getString("status"));
+                rdv.setDoctorNom(rs.getString("first_name") + " " + rs.getString("last_name"));
+                rdvs.add(rdv);
+            }
+        }
+        return rdvs;
+    }
+
     public void updateStatus(int rdvId, String status) throws SQLException {
         // La colonne primaire s'appelle "Id"
         String sql = "UPDATE appointment SET status = ? WHERE Id = ?";
