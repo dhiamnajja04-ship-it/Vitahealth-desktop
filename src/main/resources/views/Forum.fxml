@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="org.example.controller.ForumController"
+            style="-fx-background-color: #f4f6f9;">
+
+    <!-- ══ HEADER ══ -->
+    <top>
+        <HBox style="-fx-background-color: #2c3e50; -fx-padding: 15;" alignment="CENTER_LEFT" spacing="20">
+            <Label text="🏥 Forum Santé" style="-fx-text-fill: white; -fx-font-size: 22px; -fx-font-weight: bold;"/>
+            <HBox HBox.hgrow="ALWAYS"/>
+            <TextField fx:id="searchField" promptText="🔍 Rechercher un sujet..." prefWidth="250"
+                       style="-fx-background-radius: 20; -fx-padding: 8 15;"/>
+            <Button text="Rechercher" onAction="#rechercher"
+                    style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-background-radius: 20; -fx-padding: 8 15;"/>
+        </HBox>
+    </top>
+
+    <!-- ══ CONTENU PRINCIPAL ══ -->
+    <center>
+        <SplitPane dividerPositions="0.55" style="-fx-background-color: transparent;">
+
+            <!-- ═ PARTIE GAUCHE : Sujets ═ -->
+            <VBox spacing="10" style="-fx-padding: 15;">
+
+                <!-- Formulaire Sujet -->
+                <TitledPane text="📝 Nouveau Sujet / Modifier" expanded="true" style="-fx-font-weight: bold;">
+                    <GridPane hgap="10" vgap="10" style="-fx-padding: 10;">
+                        <Label text="Titre :" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+                        <TextField fx:id="titreField" promptText="Titre du sujet"
+                                   GridPane.columnIndex="1" GridPane.rowIndex="0" prefWidth="250"/>
+
+                        <Label text="Catégorie :" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+                        <ComboBox fx:id="categorieCombo" prefWidth="250"
+                                  GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+
+                        <Label text="Auteur :" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+                        <TextField fx:id="auteurField" promptText="Votre nom"
+                                   GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+
+                        <Label text="Contenu :" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
+                        <TextArea fx:id="contenuArea" promptText="Décrivez votre sujet..."
+                                  prefHeight="80" prefWidth="250" wrapText="true"
+                                  GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+
+                        <HBox spacing="10" GridPane.columnIndex="1" GridPane.rowIndex="4">
+                            <Button text="➕ Ajouter" onAction="#ajouterSujet"
+                                    style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-background-radius: 8;"/>
+                            <Button text="✏️ Modifier" onAction="#modifierSujet"
+                                    style="-fx-background-color: #f39c12; -fx-text-fill: white; -fx-background-radius: 8;"/>
+                            <Button text="🗑️ Supprimer" onAction="#supprimerSujet"
+                                    style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-background-radius: 8;"/>
+                            <Button text="🔄 Effacer" onAction="#effacer"
+                                    style="-fx-background-color: #95a5a6; -fx-text-fill: white; -fx-background-radius: 8;"/>
+                        </HBox>
+                    </GridPane>
+                </TitledPane>
+
+                <Label text="📋 Liste des Sujets" style="-fx-font-weight: bold; -fx-font-size: 14;"/>
+                <TableView fx:id="sujetTable" VBox.vgrow="ALWAYS" onMouseClicked="#selectionnerSujet">
+                    <columns>
+                        <TableColumn fx:id="colTitre"     text="Titre"      prefWidth="160"/>
+                        <TableColumn fx:id="colCategorie" text="Catégorie"  prefWidth="100"/>
+                        <TableColumn fx:id="colAuteur"    text="Auteur"     prefWidth="90"/>
+                        <TableColumn fx:id="colValid"     text="Validé"     prefWidth="60"/>
+                        <TableColumn fx:id="colDate"      text="Date"       prefWidth="130"/>
+                    </columns>
+                    <placeholder><Label text="Aucun sujet trouvé"/></placeholder>
+                </TableView>
+
+                <HBox spacing="10">
+                    <Button text="✅ Valider le sujet" onAction="#validerSujet"
+                            style="-fx-background-color: #2980b9; -fx-text-fill: white; -fx-background-radius: 8; -fx-padding: 8 20;"/>
+                    <Button text="❌ Invalider" onAction="#invaliderSujet"
+                            style="-fx-background-color: #c0392b; -fx-text-fill: white; -fx-background-radius: 8; -fx-padding: 8 20;"/>
+                </HBox>
+            </VBox>
+
+            <!-- ═ PARTIE DROITE : Commentaires ═ -->
+            <VBox spacing="10" style="-fx-padding: 15;">
+                <Label fx:id="sujetSelectionneLabel" text="💬 Sélectionnez un sujet pour voir les commentaires"
+                       style="-fx-font-weight: bold; -fx-font-size: 13; -fx-text-fill: #2c3e50;"/>
+
+                <TableView fx:id="commentaireTable" VBox.vgrow="ALWAYS">
+                    <columns>
+                        <TableColumn fx:id="colComAuteur"  text="Auteur"       prefWidth="100"/>
+                        <TableColumn fx:id="colComContenu" text="Commentaire"  prefWidth="220"/>
+                        <TableColumn fx:id="colComDate"    text="Date"         prefWidth="120"/>
+                    </columns>
+                    <placeholder><Label text="Aucun commentaire"/></placeholder>
+                </TableView>
+
+                <TitledPane text="💬 Ajouter un Commentaire" expanded="true">
+                    <VBox spacing="8" style="-fx-padding: 10;">
+                        <TextField fx:id="comAuteurField" promptText="Votre nom"/>
+                        <TextArea  fx:id="comContenuArea" promptText="Votre commentaire..."
+                                   prefHeight="70" wrapText="true"/>
+                        <HBox spacing="10">
+                            <Button text="Envoyer 📨" onAction="#ajouterCommentaire"
+                                    style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-background-radius: 8; -fx-padding: 8 20;"/>
+                            <Button text="🗑️ Supprimer" onAction="#supprimerCommentaire"
+                                    style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-background-radius: 8;"/>
+                        </HBox>
+                        <Label fx:id="nbCommentairesLabel" text="" style="-fx-text-fill: #7f8c8d;"/>
+                    </VBox>
+                </TitledPane>
+            </VBox>
+        </SplitPane>
+    </center>
+
+    <!-- ══ STATUS BAR ══ -->
+    <bottom>
+        <HBox style="-fx-background-color: #ecf0f1; -fx-padding: 8 15;" alignment="CENTER_LEFT">
+            <Label fx:id="statusLabel" text="✅ Prêt" style="-fx-text-fill: #27ae60;"/>
+        </HBox>
+    </bottom>
+</BorderPane>
