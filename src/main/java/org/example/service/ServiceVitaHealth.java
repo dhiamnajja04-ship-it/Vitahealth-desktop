@@ -51,7 +51,7 @@ public class ServiceVitaHealth {
         return null;
     }
 
-    // READ - User
+    // READ - User (SQL)
     public User getUserById(int id) throws SQLException {
         return userDAO.findById(id);
     }
@@ -68,8 +68,7 @@ public class ServiceVitaHealth {
         return userDAO.getAllMedecins();
     }
 
-    // ========== RECHERCHE ==========
-
+    // ========== RECHERCHE SQL ==========
     public List<User> rechercherUtilisateursParNom(String nom) throws SQLException {
         return userDAO.rechercherParNom(nom);
     }
@@ -86,7 +85,55 @@ public class ServiceVitaHealth {
         return userDAO.rechercherParSpecialite(specialite);
     }
 
-    // UPDATE - User
+    // ========== RECHERCHE AVEC STREAM API ==========
+    public List<User> rechercherUtilisateursParNomStream(String nom) throws SQLException {
+        return userDAO.rechercherParNomStream(nom);
+    }
+
+    public List<User> rechercherUtilisateursParEmailStream(String email) throws SQLException {
+        return userDAO.rechercherParEmailStream(email);
+    }
+
+    public List<User> rechercherUtilisateursParRoleStream(String role) throws SQLException {
+        return userDAO.rechercherParRoleStream(role);
+    }
+
+    public List<User> rechercherMedecinsParSpecialiteStream(String specialite) throws SQLException {
+        return userDAO.rechercherMedecinsParSpecialiteStream(specialite);
+    }
+
+    // ========== TRI AVEC STREAM API ==========
+    public List<User> trierUtilisateursParNom() throws SQLException {
+        return userDAO.trierParNom();
+    }
+
+    public List<User> trierUtilisateursParEmail() throws SQLException {
+        return userDAO.trierParEmail();
+    }
+
+    public List<User> trierUtilisateursParRole() throws SQLException {
+        return userDAO.trierParRole();
+    }
+
+    public List<User> trierUtilisateursParIdDesc() throws SQLException {
+        return userDAO.trierParIdDesc();
+    }
+
+    // ========== FILTRES MULTIPLES AVEC STREAM ==========
+    public List<User> filtrerUtilisateursParRoleEtVerifie(String role, boolean verified) throws SQLException {
+        return userDAO.filtrerParRoleEtVerifie(role, verified);
+    }
+
+    // ========== STATISTIQUES AVEC STREAM ==========
+    public long compterUtilisateursParRole(String role) throws SQLException {
+        return userDAO.compterParRole(role);
+    }
+
+    public double moyennePoidsPatients() throws SQLException {
+        return userDAO.moyennePoidsPatients();
+    }
+
+    // ========== UPDATE - User ==========
     public void updateUser(User user) throws SQLException {
         userDAO.update(user);
     }
@@ -95,7 +142,7 @@ public class ServiceVitaHealth {
         userDAO.updateHealthParameters(patientId, poids, taille, glycemie, tension);
     }
 
-    // DELETE - User
+    // ========== DELETE - User ==========
     public void deleteUser(int id) throws SQLException {
         userDAO.delete(id);
     }

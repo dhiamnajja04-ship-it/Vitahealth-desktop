@@ -86,7 +86,10 @@ public class UserInterface {
             System.out.println("│ 8.  📊 Tous les utilisateurs (Admin)           │");
             System.out.println("│ 9.  🗑️ Supprimer un utilisateur (Admin)        │");
             System.out.println("│ 10. 🔓 Activer/Désactiver un utilisateur       │");
-            System.out.println("│ 11. 🔍 Rechercher utilisateurs (Admin)         │");
+            System.out.println("│ 11. 🔍 Recherche SQL (Admin)                   │");
+            System.out.println("│ 12. 🔍 Recherche STREAM (Admin)                │");
+            System.out.println("│ 13. 📊 Tri STREAM (Admin)                      │");
+            System.out.println("│ 14. 📈 Statistiques STREAM (Admin)             │");
         }
 
         System.out.println("├─────────────────────────────────────────────────┤");
@@ -135,7 +138,10 @@ public class UserInterface {
                 case 8: listerTousUtilisateurs(); break;
                 case 9: supprimerUtilisateur(); break;
                 case 10: activerDesactiverUtilisateur(); break;
-                case 11: menuRechercheAdmin(); break;
+                case 11: menuRechercheAdmin(); break;          // recherche SQL
+                case 12: menuRechercheStreamAdmin(); break;    // recherche Stream
+                case 13: menuTriAdmin(); break;                // tri Stream
+                case 14: menuStatistiquesAdmin(); break;       // statistiques Stream
                 default: System.out.println("❌ Choix invalide !");
             }
         }
@@ -460,7 +466,7 @@ public class UserInterface {
         }
     }
 
-    // ==================== FONCTIONS ADMIN ====================
+    // ==================== FONCTIONS ADMIN (SQL) ====================
 
     private static void listerTousUtilisateurs() throws SQLException {
         System.out.println("\n--- TOUS LES UTILISATEURS ---");
@@ -532,13 +538,13 @@ public class UserInterface {
     }
 
     private static void menuRechercheAdmin() throws SQLException {
-        System.out.println("\n┌───────────── RECHERCHE UTILISATEURS ─────────────┐");
-        System.out.println("│ 1. 🔍 Rechercher par nom                         │");
-        System.out.println("│ 2. 📧 Rechercher par email                       │");
-        System.out.println("│ 3. 👑 Rechercher par rôle (patient/médecin/admin)│");
-        System.out.println("│ 4. 🏥 Rechercher médecin par spécialité          │");
-        System.out.println("│ 0. 🔙 Retour                                     │");
-        System.out.println("└──────────────────────────────────────────────────┘");
+        System.out.println("\n┌───────────── RECHERCHE SQL ─────────────┐");
+        System.out.println("│ 1. 🔍 Rechercher par nom                 │");
+        System.out.println("│ 2. 📧 Rechercher par email               │");
+        System.out.println("│ 3. 👑 Rechercher par rôle                │");
+        System.out.println("│ 4. 🏥 Rechercher médecin par spécialité  │");
+        System.out.println("│ 0. 🔙 Retour                             │");
+        System.out.println("└──────────────────────────────────────────┘");
         System.out.print("👉 Votre choix : ");
 
         int choix = lireEntier();
@@ -620,6 +626,125 @@ public class UserInterface {
         for (User m : medecins) {
             System.out.println("   👨‍⚕️ ID:" + m.getId() + " - Dr. " + m.getLastName() + " " + m.getFirstName() +
                     " - " + m.getSpecialite() + " - " + m.getEmail());
+        }
+    }
+
+    // ==================== FONCTIONS ADMIN (STREAM) ====================
+
+    private static void menuRechercheStreamAdmin() throws SQLException {
+        System.out.println("\n┌───────────── RECHERCHE STREAM ─────────────┐");
+        System.out.println("│ 1. 🔍 Rechercher par nom (Stream)           │");
+        System.out.println("│ 2. 📧 Rechercher par email (Stream)         │");
+        System.out.println("│ 3. 👑 Rechercher par rôle (Stream)          │");
+        System.out.println("│ 4. 🏥 Rechercher médecin par spécialité     │");
+        System.out.println("│ 0. 🔙 Retour                                │");
+        System.out.println("└─────────────────────────────────────────────┘");
+        System.out.print("👉 Votre choix : ");
+
+        int choix = lireEntier();
+        List<User> users = null;
+        switch (choix) {
+            case 1:
+                System.out.print("🔍 Nom ou prénom : ");
+                users = service.rechercherUtilisateursParNomStream(scanner.nextLine());
+                break;
+            case 2:
+                System.out.print("🔍 Email : ");
+                users = service.rechercherUtilisateursParEmailStream(scanner.nextLine());
+                break;
+            case 3:
+                System.out.print("🔍 Rôle (patient/medecin/admin) : ");
+                users = service.rechercherUtilisateursParRoleStream(scanner.nextLine().toLowerCase());
+                break;
+            case 4:
+                System.out.print("🔍 Spécialité : ");
+                users = service.rechercherMedecinsParSpecialiteStream(scanner.nextLine());
+                break;
+            default:
+                System.out.println("❌ Choix invalide !");
+                return;
+        }
+
+        if (users == null || users.isEmpty()) {
+            System.out.println("📭 Aucun résultat trouvé.");
+            return;
+        }
+
+        System.out.println("\n📋 Résultats de la recherche STREAM :");
+        for (User u : users) {
+            String verifiedIcon = u.isVerified() ? "✅" : "⏳";
+            System.out.println("   " + verifiedIcon + " ID:" + u.getId() + " - " + u.getFirstName() + " " + u.getLastName() +
+                    " (" + u.getRole() + ") - " + u.getEmail());
+        }
+    }
+
+    private static void menuTriAdmin() throws SQLException {
+        System.out.println("\n┌───────────── TRI STREAM ─────────────┐");
+        System.out.println("│ 1. 📊 Trier par nom (A-Z)            │");
+        System.out.println("│ 2. 📊 Trier par email (A-Z)          │");
+        System.out.println("│ 3. 📊 Trier par rôle                 │");
+        System.out.println("│ 4. 📊 Trier par ID (décroissant)     │");
+        System.out.println("│ 0. 🔙 Retour                         │");
+        System.out.println("└──────────────────────────────────────┘");
+        System.out.print("👉 Votre choix : ");
+
+        int choix = lireEntier();
+        List<User> users = null;
+        switch (choix) {
+            case 1: users = service.trierUtilisateursParNom(); break;
+            case 2: users = service.trierUtilisateursParEmail(); break;
+            case 3: users = service.trierUtilisateursParRole(); break;
+            case 4: users = service.trierUtilisateursParIdDesc(); break;
+            default: return;
+        }
+
+        if (users == null || users.isEmpty()) {
+            System.out.println("📭 Aucun utilisateur à afficher.");
+            return;
+        }
+
+        System.out.println("\n📋 Résultats du tri :");
+        for (User u : users) {
+            String verifiedIcon = u.isVerified() ? "✅" : "⏳";
+            System.out.println("   " + verifiedIcon + " ID:" + u.getId() + " - " + u.getFirstName() + " " + u.getLastName() +
+                    " (" + u.getRole() + ") - " + u.getEmail());
+        }
+    }
+
+    private static void menuStatistiquesAdmin() throws SQLException {
+        System.out.println("\n┌───────────── STATISTIQUES STREAM ─────────────┐");
+        System.out.println("│ 1. 📊 Nombre de patients                       │");
+        System.out.println("│ 2. 📊 Nombre de médecins                       │");
+        System.out.println("│ 3. 📊 Nombre d'administrateurs                 │");
+        System.out.println("│ 4. ⚖️ Moyenne des poids des patients           │");
+        System.out.println("│ 0. 🔙 Retour                                   │");
+        System.out.println("└────────────────────────────────────────────────┘");
+        System.out.print("👉 Votre choix : ");
+
+        int choix = lireEntier();
+        switch (choix) {
+            case 1:
+                long nbPatients = service.compterUtilisateursParRole("patient");
+                System.out.println("👥 Nombre total de patients : " + nbPatients);
+                break;
+            case 2:
+                long nbMedecins = service.compterUtilisateursParRole("medecin");
+                System.out.println("👨‍⚕️ Nombre total de médecins : " + nbMedecins);
+                break;
+            case 3:
+                long nbAdmins = service.compterUtilisateursParRole("admin");
+                System.out.println("👑 Nombre total d'administrateurs : " + nbAdmins);
+                break;
+            case 4:
+                double moyennePoids = service.moyennePoidsPatients();
+                if (moyennePoids > 0) {
+                    System.out.println("⚖️ Moyenne des poids des patients : " + String.format("%.1f", moyennePoids) + " kg");
+                } else {
+                    System.out.println("📭 Aucun patient avec poids renseigné.");
+                }
+                break;
+            default:
+                System.out.println("❌ Choix invalide !");
         }
     }
 

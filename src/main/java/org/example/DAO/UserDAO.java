@@ -4,7 +4,9 @@ import org.example.entity.User;
 import org.example.config.DatabaseConnection;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class UserDAO {
 
@@ -19,9 +21,9 @@ public class UserDAO {
             pstmt.setString(2, user.getPassword());
             pstmt.setString(3, user.getFirstName());
             pstmt.setString(4, user.getLastName());
-            pstmt.setString(5, user.getRole());          // 'patient', 'medecin', 'admin'
-            pstmt.setString(6, "[]");                    // roles (JSON vide)
-            pstmt.setBoolean(7, user.isVerified());      // is_verified (false par défaut)
+            pstmt.setString(5, user.getRole());
+            pstmt.setString(6, "[]");
+            pstmt.setBoolean(7, user.isVerified());
             pstmt.setString(8, user.getSpecialite());
             pstmt.setString(9, user.getDiplome());
             pstmt.setString(10, user.getCin());
@@ -87,13 +89,11 @@ public class UserDAO {
         return users;
     }
 
-    // Récupérer tous les médecins (pratique)
     public List<User> getAllMedecins() throws SQLException {
         return findByRole("medecin");
     }
 
-    // ==================== RECHERCHE ====================
-
+    // ==================== RECHERCHE SQL ====================
     public List<User> rechercherParNom(String nom) throws SQLException {
         List<User> users = new ArrayList<>();
         String sql = "SELECT * FROM user WHERE first_name LIKE ? OR last_name LIKE ?";
@@ -147,6 +147,95 @@ public class UserDAO {
         return users;
     }
 
+    // ==================== RECHERCHE AVEC STREAM API ====================
+    public List<User> rechercherParNomStream(String nom) throws SQLException {
+        List<User> allUsers = findAll();
+        return allUsers.stream()
+                .filter(u -> u.getFirstName().toLowerCase().contains(nom.toLowerCase()) ||
+                        u.getLastName().toLowerCase().contains(nom.toLowerCase()))
+                .collect(Collectors.toList());
+    }
+
+    public List<User> rechercherParEmailStream(String email) throws SQLException {
+        List<User> allUsers = findAll();
+        return allUsers.stream()
+                .filter(u -> u.getEmail().toLowerCase().contains(email.toLowerCase()))
+                .collect(Collectors.toList());
+    }
+
+    public List<User> rechercherParRoleStream(String role) throws SQLException {
+        List<User> allUsers = findAll();
+        return allUsers.stream()
+                .filter(u -> u.getRole().equalsIgnoreCase(role))
+                .collect(Collectors.toList());
+    }
+
+    public List<User> rechercherMedecinsParSpecialiteStream(String specialite) throws SQLException {
+        List<User> allUsers = findAll();
+        return allUsers.stream()
+                .filter(u -> u.getRole().equals("medecin"))
+                .filter(u -> u.getSpecialite() != null &&
+                        u.getSpecialite().toLowerCase().contains(specialite.toLowerCase()))
+                .collect(Collectors.toList());
+    }
+
+    // ==================== TRI AVEC STREAM API ====================
+    public List<User> trierParNom() throws SQLException {
+        List<User> allUsers = findAll();
+        return allUsers.stream()
+                .sorted(Comparator.comparing(User::getLastName)
+                        .thenComparing(User::getFirstName))
+                .collect(Collectors.toList());
+    }
+
+    public List<User> trierParEmail() throws SQLException {
+        List<User> allUsers = findAll();
+        return allUsers.stream()
+                .sorted(Comparator.comparing(User::getEmail))
+                .collect(Collectors.toList());
+    }
+
+    public List<User> trierParRole() throws SQLException {
+        List<User> allUsers = findAll();
+        return allUsers.stream()
+                .sorted(Comparator.comparing(User::getRole))
+                .collect(Collectors.toList());
+    }
+
+    public List<User> trierParIdDesc() throws SQLException {
+        List<User> allUsers = findAll();
+        return allUsers.stream()
+                .sorted(Comparator.comparing(User::getId).reversed())
+                .collect(Collectors.toList());
+    }
+
+    // ==================== FILTRES MULTIPLES AVEC STREAM ====================
+    public List<User> filtrerParRoleEtVerifie(String role, boolean verified) throws SQLException {
+        List<User> allUsers = findAll();
+        return allUsers.stream()
+                .filter(u -> u.getRole().equalsIgnoreCase(role))
+                .filter(u -> u.isVerified() == verified)
+                .collect(Collectors.toList());
+    }
+
+    // ==================== STATISTIQUES AVEC STREAM ====================
+    public long compterParRole(String role) throws SQLException {
+        List<User> allUsers = findAll();
+        return allUsers.stream()
+                .filter(u -> u.getRole().equalsIgnoreCase(role))
+                .count();
+    }
+
+    public double moyennePoidsPatients() throws SQLException {
+        List<User> allUsers = findAll();
+        return allUsers.stream()
+                .filter(u -> u.getRole().equals("patient"))
+                .filter(u -> u.getPoids() != null)
+                .mapToDouble(User::getPoids)
+                .average()
+                .orElse(0.0);
+    }
+
     // ==================== UPDATE ====================
     public void update(User user) throws SQLException {
         String sql = "UPDATE user SET email=?, password=?, first_name=?, last_name=?, role=?, " +
@@ -172,7 +261,6 @@ public class UserDAO {
         }
     }
 
-    // Mise à jour partielle des paramètres de santé
     public void updateHealthParameters(int userId, Double poids, Double taille, Double glycemie, String tension) throws SQLException {
         String sql = "UPDATE user SET poids=?, taille=?, glycemie=?, tension=? WHERE id=?";
         try (PreparedStatement pstmt = DatabaseConnection.getConnection().prepareStatement(sql)) {
