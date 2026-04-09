@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<!-- Dans la barre du haut -->
+<MenuBar>
+    <Menu text="Fichier">
+        <MenuItem text="Changer vers Médecin" onAction="#changerVersMedecin"/>
+        <MenuItem text="Quitter" onAction="#quitter"/>
+    </Menu>
+</MenuBar>
+<VBox spacing="15" padding="20" xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.vitahealth.controllers.MedecinController">
+
+    <Label text="👨‍⚕️ Gestion des Prescriptions" style="-fx-font-size: 20px; -fx-font-weight: bold;"/>
+
+    <!-- Sélection du patient -->
+    <HBox spacing="10">
+        <Label text="Patient:"/>
+        <ComboBox fx:id="patientCombo" promptText="Sélectionner un patient"/>
+        <Button text="Charger" onAction="#chargerPrescriptions"/>
+    </HBox>
+
+    <!-- Formulaire -->
+    <GridPane hgap="15" vgap="10">
+        <Label text="Médicaments:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+        <TextArea fx:id="medicamentsArea" GridPane.rowIndex="0" GridPane.columnIndex="1" prefWidth="400" prefHeight="80" promptText="Paracétamol 500mg&#10;Amoxicilline 1g"/>
+
+        <Label text="Durée:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+        <TextField fx:id="dureeField" GridPane.rowIndex="1" GridPane.columnIndex="1" promptText="ex: 7 jours"/>
+
+        <Label text="Instructions:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+        <TextArea fx:id="instructionsArea" GridPane.rowIndex="2" GridPane.columnIndex="1" prefHeight="60" promptText="Prendre matin et soir après les repas"/>
+    </GridPane>
+
+    <!-- Boutons CRUD -->
+    <HBox spacing="10">
+        <Button text="➕ Ajouter" onAction="#ajouterPrescription" style="-fx-background-color: green; -fx-text-fill: white;"/>
+        <Button text="✏️ Modifier" onAction="#modifierPrescription" style="-fx-background-color: orange; -fx-text-fill: white;"/>
+        <Button text="❌ Supprimer" onAction="#supprimerPrescription" style="-fx-background-color: red; -fx-text-fill: white;"/>
+        <Button text="🔄 Rafraîchir" onAction="#chargerPrescriptions"/>
+    </HBox>
+
+    <!-- Tableau des prescriptions -->
+    <TableView fx:id="prescriptionTable">
+        <columns>
+            <TableColumn text="Date" fx:id="colDate"/>
+            <TableColumn text="Médicaments" fx:id="colMedicaments"/>
+            <TableColumn text="Durée" fx:id="colDuree"/>
+            <TableColumn text="Instructions" fx:id="colInstructions"/>
+        </columns>
+    </TableView>
+</VBox>

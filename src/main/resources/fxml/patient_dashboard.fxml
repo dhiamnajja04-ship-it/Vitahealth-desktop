@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox spacing="5" xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.vitahealth.controllers.PatientController">
+
+    <!-- Menu Bar -->
+    <MenuBar>
+        <Menu text="Fichier">
+            <MenuItem text="👨‍⚕️ Passer en mode Médecin" onAction="#changerVersMedecin"/>
+            <SeparatorMenuItem/>
+            <MenuItem text="❌ Quitter" onAction="#quitter"/>
+        </Menu>
+        <Menu text="Aide">
+            <MenuItem text="À propos" onAction="#aPropos"/>
+        </Menu>
+    </MenuBar>
+
+    <TabPane tabClosingPolicy="UNAVAILABLE">
+
+        <!-- ============ ONGLET 1 : PARAMÈTRES MÉDICAUX ============ -->
+        <Tab text="📊 Mes paramètres médicaux">
+            <VBox spacing="15">
+                <padding>
+                    <Insets top="20" right="20" bottom="20" left="20"/>
+                </padding>
+
+                <!-- Formulaire -->
+                <GridPane hgap="15" vgap="10">
+                    <padding>
+                        <Insets bottom="10"/>
+                    </padding>
+
+                    <Label text="Poids (kg):" GridPane.rowIndex="0" GridPane.columnIndex="0" style="-fx-font-weight: bold;"/>
+                    <TextField fx:id="poidsField" GridPane.rowIndex="0" GridPane.columnIndex="1" promptText="ex: 70.5"/>
+
+                    <Label text="Taille (m):" GridPane.rowIndex="1" GridPane.columnIndex="0" style="-fx-font-weight: bold;"/>
+                    <TextField fx:id="tailleField" GridPane.rowIndex="1" GridPane.columnIndex="1" promptText="ex: 1.75"/>
+
+                    <Label text="Glycémie (mmol/L):" GridPane.rowIndex="2" GridPane.columnIndex="0" style="-fx-font-weight: bold;"/>
+                    <TextField fx:id="glycemieField" GridPane.rowIndex="2" GridPane.columnIndex="1" promptText="ex: 5.6"/>
+
+                    <Label text="Tension systolique:" GridPane.rowIndex="3" GridPane.columnIndex="0" style="-fx-font-weight: bold;"/>
+                    <TextField fx:id="tensionField" GridPane.rowIndex="3" GridPane.columnIndex="1" promptText="ex: 120"/>
+
+                    <Label text="IMC:" GridPane.rowIndex="4" GridPane.columnIndex="0" style="-fx-font-weight: bold;"/>
+                    <Label fx:id="imcLabel" GridPane.rowIndex="4" GridPane.columnIndex="1" style="-fx-font-weight: bold; -fx-text-fill: blue;"/>
+
+                    <Label text="Interprétation:" GridPane.rowIndex="5" GridPane.columnIndex="0" style="-fx-font-weight: bold;"/>
+                    <Label fx:id="interpretationLabel" GridPane.rowIndex="5" GridPane.columnIndex="1"/>
+                </GridPane>
+
+                <!-- Boutons CRUD -->
+                <HBox spacing="10" alignment="CENTER">
+                    <Button text="➕ AJOUTER" onAction="#ajouterParametre" style="-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-weight: bold;"/>
+                    <Button text="✏️ MODIFIER" onAction="#modifierParametre" style="-fx-background-color: #f39c12; -fx-text-fill: white; -fx-font-weight: bold;"/>
+                    <Button text="❌ SUPPRIMER" onAction="#supprimerParametre" style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold;"/>
+                    <Button text="🔄 RAFRAÎCHIR" onAction="#rafraichirTableaux" style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold;"/>
+                </HBox>
+
+                <!-- Tableau des paramètres -->
+                <TableView fx:id="parametreTable" prefHeight="400">
+                    <columns>
+                        <TableColumn text="📅 Date" fx:id="colDate" prefWidth="150"/>
+                        <TableColumn text="⚖️ Poids (kg)" fx:id="colPoids" prefWidth="100"/>
+                        <TableColumn text="📏 Taille (m)" fx:id="colTaille" prefWidth="100"/>
+                        <TableColumn text="🩸 Glycémie" fx:id="colGlycemie" prefWidth="100"/>
+                        <TableColumn text="❤️ Tension" fx:id="colTension" prefWidth="100"/>
+                        <TableColumn text="📊 IMC" fx:id="colImc" prefWidth="80"/>
+                    </columns>
+                </TableView>
+            </VBox>
+        </Tab>
+
+        <!-- ============ ONGLET 2 : MES PRESCRIPTIONS ============ -->
+        <Tab text="📋 Mes prescriptions">
+            <VBox spacing="15">
+                <padding>
+                    <Insets top="20" right="20" bottom="20" left="20"/>
+                </padding>
+
+                <Label text="Mes prescriptions médicales" style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
+
+                <Label text="⚠️ Lecture seule - Les prescriptions sont créées par votre médecin" style="-fx-text-fill: #7f8c8d; -fx-font-style: italic;"/>
+
+                <!-- Tableau des prescriptions -->
+                <TableView fx:id="prescriptionTable" prefHeight="500">
+                    <columns>
+                        <TableColumn text="📅 Date" fx:id="colPrescDate" prefWidth="150"/>
+                        <TableColumn text="💊 Médicaments" fx:id="colMedicaments" prefWidth="250"/>
+                        <TableColumn text="⏱️ Durée" fx:id="colDuree" prefWidth="100"/>
+                        <TableColumn text="📝 Instructions" fx:id="colInstructions" prefWidth="350"/>
+                    </columns>
+                </TableView>
+            </VBox>
+        </Tab>
+    </TabPane>
+</VBox>
