@@ -1,55 +1,128 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
-<!-- Dans la barre du haut -->
-<MenuBar>
-    <Menu text="Fichier">
-        <MenuItem text="Changer vers Médecin" onAction="#changerVersMedecin"/>
-        <MenuItem text="Quitter" onAction="#quitter"/>
-    </Menu>
-</MenuBar>
-<VBox spacing="15" padding="20" xmlns="http://javafx.com/javafx/21"
-      xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="com.vitahealth.controllers.MedecinController">
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Menu?>
+<?import javafx.scene.control.MenuBar?>
+<?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.layout.VBox?>
 
-    <Label text="👨‍⚕️ Gestion des Prescriptions" style="-fx-font-size: 20px; -fx-font-weight: bold;"/>
+<VBox spacing="10" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.vitahealth.controllers.MedecinController">
+
+    <padding>
+        <Insets bottom="20" left="20" right="20" top="20" />
+    </padding>
+
+    <MenuBar>
+        <Menu text="Fichier">
+            <MenuItem onAction="#deconnecter" text="Se déconnecter" />
+            <MenuItem onAction="#quitter" text="Quitter" />
+        </Menu>
+        <Menu text="Aide">
+            <MenuItem onAction="#aPropos" text="À propos" />
+        </Menu>
+    </MenuBar>
+
+    <Label style="-fx-font-size: 20px; -fx-font-weight: bold;" text="️ Espace Médecin" />
+
+    <!-- Filtre par maladie -->
+    <HBox alignment="CENTER_LEFT" spacing="10">
+        <Label  text="Filtrer par maladie :" />
+        <ComboBox fx:id="filtreMaladieCombo" editable="true" prefWidth="200" promptText="Toutes les maladies" />
+        <Button onAction="#filtrerPatients"  text=" Filtrer" />
+        <Button onAction="#reinitialiserFiltre"  text=" Réinitialiser" />
+    </HBox>
 
     <!-- Sélection du patient -->
-    <HBox spacing="10">
-        <Label text="Patient:"/>
-        <ComboBox fx:id="patientCombo" promptText="Sélectionner un patient"/>
-        <Button text="Charger" onAction="#chargerPrescriptions"/>
+    <HBox alignment="CENTER_LEFT" spacing="10">
+        <Label style="-fx-font-weight: bold;" text="Patient :" />
+        <ComboBox fx:id="patientCombo" prefWidth="300" promptText="Choisir un patient" />
+        <Button onAction="#chargerDonneesPatient"  text=" Charger les données" />
+        <Button onAction="#rafraichirListePatients"  text=" Rafraîchir la liste" />
     </HBox>
 
-    <!-- Formulaire -->
-    <GridPane hgap="15" vgap="10">
-        <Label text="Médicaments:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
-        <TextArea fx:id="medicamentsArea" GridPane.rowIndex="0" GridPane.columnIndex="1" prefWidth="400" prefHeight="80" promptText="Paracétamol 500mg&#10;Amoxicilline 1g"/>
+    <Separator />
 
-        <Label text="Durée:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
-        <TextField fx:id="dureeField" GridPane.rowIndex="1" GridPane.columnIndex="1" promptText="ex: 7 jours"/>
+    <TabPane tabClosingPolicy="UNAVAILABLE">
+        <!-- Onglet Prescriptions -->
+        <Tab text=" Prescriptions">
+            <VBox spacing="15">
+                <padding>
+                    <Insets bottom="20" left="20" right="20" top="20" />
+                </padding>
 
-        <Label text="Instructions:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
-        <TextArea fx:id="instructionsArea" GridPane.rowIndex="2" GridPane.columnIndex="1" prefHeight="60" promptText="Prendre matin et soir après les repas"/>
-    </GridPane>
+                <Label style="-fx-font-size: 14px; -fx-font-weight: bold;" text=" Gestion des prescriptions" />
+                <GridPane hgap="15" vgap="10">
+                    <Label style="-fx-font-weight: bold;" text=" Médicaments :" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                    <TextArea fx:id="medicamentsArea" prefHeight="80" prefWidth="400" promptText="Ex: Paracétamol 500mg&#10;Amoxicilline 1g" GridPane.columnIndex="1" GridPane.rowIndex="0" />
 
-    <!-- Boutons CRUD -->
-    <HBox spacing="10">
-        <Button text="➕ Ajouter" onAction="#ajouterPrescription" style="-fx-background-color: green; -fx-text-fill: white;"/>
-        <Button text="✏️ Modifier" onAction="#modifierPrescription" style="-fx-background-color: orange; -fx-text-fill: white;"/>
-        <Button text="❌ Supprimer" onAction="#supprimerPrescription" style="-fx-background-color: red; -fx-text-fill: white;"/>
-        <Button text="🔄 Rafraîchir" onAction="#chargerPrescriptions"/>
-    </HBox>
+                    <Label style="-fx-font-weight: bold;" text="⏱ Durée :" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                    <TextField fx:id="dureeField" promptText="ex: 7 jours" GridPane.columnIndex="1" GridPane.rowIndex="1" />
 
-    <!-- Tableau des prescriptions -->
-    <TableView fx:id="prescriptionTable">
-        <columns>
-            <TableColumn text="Date" fx:id="colDate"/>
-            <TableColumn text="Médicaments" fx:id="colMedicaments"/>
-            <TableColumn text="Durée" fx:id="colDuree"/>
-            <TableColumn text="Instructions" fx:id="colInstructions"/>
-        </columns>
-    </TableView>
+                    <Label style="-fx-font-weight: bold;" text=" Instructions :" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+                    <TextArea fx:id="instructionsArea" prefHeight="60" promptText="Prendre matin et soir après les repas" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+               <columnConstraints>
+                  <ColumnConstraints />
+                  <ColumnConstraints />
+               </columnConstraints>
+               <rowConstraints>
+                  <RowConstraints />
+                  <RowConstraints />
+                  <RowConstraints />
+               </rowConstraints>
+                </GridPane>
+
+                <HBox alignment="CENTER" spacing="10">
+                    <Button onAction="#ajouterPrescription"  text=" Ajouter" />
+                    <Button onAction="#modifierPrescription"  text="️ Modifier" />
+                    <Button onAction="#supprimerPrescription"  text=" Supprimer" />
+                    <Button onAction="#viderChamps"  text="️ Vider" />
+                </HBox>
+
+                <TableView fx:id="prescriptionTable" prefHeight="300">
+                    <columns>
+                        <TableColumn fx:id="colDate" prefWidth="150" text="Date" />
+                        <TableColumn fx:id="colMedicaments" prefWidth="300" text=" Médicaments" />
+                        <TableColumn fx:id="colDuree" prefWidth="120" text="️ Durée" />
+                        <TableColumn fx:id="colInstructions" prefWidth="350" text=" Instructions" />
+                    </columns>
+                </TableView>
+            </VBox>
+        </Tab>
+
+        <!-- Onglet Paramètres médicaux -->
+        <Tab text="🩺 Paramètres médicaux">
+            <VBox spacing="15">
+                <padding>
+                    <Insets bottom="20" left="20" right="20" top="20" />
+                </padding>
+
+                <Label  text=" Historique des paramètres médicaux" />
+                <TableView fx:id="parametreTable" prefHeight="500">
+                    <columns>
+                        <TableColumn fx:id="colParamDate" prefWidth="150" text=" Date" />
+                        <TableColumn fx:id="colPoids" prefWidth="100" text=" Poids (kg)" />
+                        <TableColumn fx:id="colTaille" prefWidth="100" text=" Taille (m)" />
+                        <TableColumn fx:id="colGlycemie" prefWidth="100" text=" Glycémie" />
+                        <TableColumn fx:id="colTension" prefWidth="100" text="️ Tension" />
+                        <TableColumn fx:id="colImc" prefWidth="80" text=" IMC" />
+                        <TableColumn fx:id="colInterpretation" prefWidth="200" text=" Interprétation" />
+                    </columns>
+                </TableView>
+            </VBox>
+        </Tab>
+    </TabPane>
 </VBox>

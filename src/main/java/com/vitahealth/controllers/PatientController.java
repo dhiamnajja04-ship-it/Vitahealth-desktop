@@ -1,4 +1,5 @@
 package com.vitahealth.controllers;
+import com.vitahealth.database.DatabaseConnection;
 
 import com.vitahealth.entity.MedicalRecord;
 import com.vitahealth.entity.ParaMedical;
@@ -16,57 +17,50 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Stage;
 
+import java.sql.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Optional;
 
 public class PatientController {
 
-    // ============ CHAMPS DU FORMULAIRE ============
     @FXML private TextField poidsField;
     @FXML private TextField tailleField;
     @FXML private TextField glycemieField;
     @FXML private TextField tensionField;
     @FXML private Label imcLabel;
     @FXML private Label interpretationLabel;
+    @FXML private Label patientNameLabel; // Ajoutez ce label dans votre FXML
 
-    // ============ TABLEAU PARAMÈTRES MÉDICAUX ============
     @FXML private TableView<ParaMedical> parametreTable;
     @FXML private TableColumn<ParaMedical, LocalDateTime> colDate;
-    @FXML private TableColumn<ParaMedical, Double> colPoids;
-    @FXML private TableColumn<ParaMedical, Double> colTaille;
-    @FXML private TableColumn<ParaMedical, Double> colGlycemie;
+    @FXML private TableColumn<ParaMedical, Double> colPoids, colTaille, colGlycemie, colImc;
     @FXML private TableColumn<ParaMedical, String> colTension;
-    @FXML private TableColumn<ParaMedical, Double> colImc;
 
-    // ============ TABLEAU PRESCRIPTIONS ============
     @FXML private TableView<Prescription> prescriptionTable;
     @FXML private TableColumn<Prescription, LocalDateTime> colPrescDate;
-    @FXML private TableColumn<Prescription, String> colMedicaments;
-    @FXML private TableColumn<Prescription, String> colDuree;
-    @FXML private TableColumn<Prescription, String> colInstructions;
+    @FXML private TableColumn<Prescription, String> colMedicaments, colDuree, colInstructions;
 
-    // ============ SERVICES ============
     private ParaMedicalService paraMedicalService;
     private PrescriptionService prescriptionService;
 
-    // ============ DONNÉES ============
-    private MedicalRecord currentMedicalRecord;
+    private int currentUserId;
+    private String currentUserEmail;
+    private int currentMedicalRecordId;
+
     private ObservableList<ParaMedical> parametresList;
     private ObservableList<Prescription> prescriptionsList;
     private DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
-    // ============ INITIALISATION ============
     @FXML
     public void initialize() {
-        // Initialisation des services
         paraMedicalService = new ParaMedicalService();
         prescriptionService = new PrescriptionService();
 
-        // Initialisation des listes
         parametresList = FXCollections.observableArrayList();
         prescriptionsList = FXCollections.observableArrayList();
 
-        // Configuration du tableau des paramètres médicaux
+        // Configuration des colonnes
         colDate.setCellValueFactory(new PropertyValueFactory<>("createdAt"));
         colPoids.setCellValueFactory(new PropertyValueFactory<>("poids"));
         colTaille.setCellValueFactory(new PropertyValueFactory<>("taille"));
@@ -74,135 +68,140 @@ public class PatientController {
         colTension.setCellValueFactory(new PropertyValueFactory<>("tensionSystolique"));
         colImc.setCellValueFactory(new PropertyValueFactory<>("imc"));
 
-        // Formatage de la date
         colDate.setCellFactory(column -> new TableCell<ParaMedical, LocalDateTime>() {
             @Override
             protected void updateItem(LocalDateTime item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setText(null);
-                } else {
-                    setText(item.format(formatter));
-                }
+                if (empty || item == null) setText(null);
+                else setText(item.format(formatter));
             }
         });
 
-        // Configuration du tableau des prescriptions
         colPrescDate.setCellValueFactory(new PropertyValueFactory<>("createdAt"));
         colMedicaments.setCellValueFactory(new PropertyValueFactory<>("medicationList"));
         colDuree.setCellValueFactory(new PropertyValueFactory<>("duration"));
         colInstructions.setCellValueFactory(new PropertyValueFactory<>("instructions"));
 
-        // Formatage de la date pour les prescriptions
         colPrescDate.setCellFactory(column -> new TableCell<Prescription, LocalDateTime>() {
             @Override
             protected void updateItem(LocalDateTime item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setText(null);
-                } else {
-                    setText(item.format(formatter));
-                }
+                if (empty || item == null) setText(null);
+                else setText(item.format(formatter));
             }
         });
 
-        // Simulation du MedicalRecord (à remplacer par l'ID du patient connecté)
-        currentMedicalRecord = new MedicalRecord();
-        currentMedicalRecord.setId(1); // À modifier selon votre authentification
-
-        // Calcul de l'IMC en temps réel
+        // Calcul IMC en temps réel
         poidsField.textProperty().addListener((obs, old, newVal) -> calculerIMC());
         tailleField.textProperty().addListener((obs, old, newVal) -> calculerIMC());
 
-        // Chargement des données
-        rafraichirTableaux();
-
-        // Sélection dans le tableau des paramètres
+        // Sélection dans le tableau
         parametreTable.getSelectionModel().selectedItemProperty().addListener(
-                (obs, oldSelection, newSelection) -> {
-                    if (newSelection != null) {
-                        remplirChamps(newSelection);
-                    }
+                (obs, old, newVal) -> {
+                    if (newVal != null) remplirChamps(newVal);
                 }
         );
     }
 
-    // ============ CALCUL IMC ============
-    private void calculerIMC() {
-        try {
-            String poidsText = poidsField.getText();
-            String tailleText = tailleField.getText();
+    // Appelé depuis MainApp après l'authentification
+    public void setCurrentUser(int userId, String email) {
+        this.currentUserId = userId;
+        this.currentUserEmail = email;
 
-            if (poidsText != null && tailleText != null && !poidsText.isEmpty() && !tailleText.isEmpty()) {
-                double poids = Double.parseDouble(poidsText);
-                double taille = Double.parseDouble(tailleText);
+        // Récupérer le medical_record_id associé à cet utilisateur
+        chargerMedicalRecordId();
 
-                if (taille > 0) {
-                    double imc = Math.round((poids / (taille * taille)) * 10.0) / 10.0;
-                    imcLabel.setText(String.valueOf(imc));
+        // Afficher le nom du patient
+        if (patientNameLabel != null) {
+            patientNameLabel.setText("Patient: " + email);
+        }
 
-                    // Interprétation de l'IMC
-                    if (imc < 18.5) {
-                        interpretationLabel.setText("Insuffisance pondérale ⚠️");
-                        interpretationLabel.setStyle("-fx-text-fill: #f39c12;");
-                    } else if (imc < 25) {
-                        interpretationLabel.setText("Poids normal ✅");
-                        interpretationLabel.setStyle("-fx-text-fill: #2ecc71;");
-                    } else if (imc < 30) {
-                        interpretationLabel.setText("Surpoids ⚠️");
-                        interpretationLabel.setStyle("-fx-text-fill: #f39c12;");
-                    } else if (imc < 35) {
-                        interpretationLabel.setText("Obésité modérée 🔴");
-                        interpretationLabel.setStyle("-fx-text-fill: #e74c3c;");
-                    } else if (imc < 40) {
-                        interpretationLabel.setText("Obésité sévère 🔴🔴");
-                        interpretationLabel.setStyle("-fx-text-fill: #e74c3c; -fx-font-weight: bold;");
+        // Charger les données
+        rafraichirTableaux();
+    }
+
+    private void chargerMedicalRecordId() {
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            // S'assurer que la table existe avec patient_id
+            String createTable = "CREATE TABLE IF NOT EXISTS medical_record (" +
+                    "id INT PRIMARY KEY AUTO_INCREMENT, " +
+                    "patient_id INT NOT NULL, " +
+                    "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
+                    "FOREIGN KEY (patient_id) REFERENCES user(id) ON DELETE CASCADE)";
+            try (Statement st = conn.createStatement()) {
+                st.execute(createTable);
+            }
+
+            // Requête avec patient_id
+            String selectSql = "SELECT id FROM medical_record WHERE patient_id = ?";
+            try (PreparedStatement ps = conn.prepareStatement(selectSql)) {
+                ps.setInt(1, currentUserId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        currentMedicalRecordId = rs.getInt("id");
                     } else {
-                        interpretationLabel.setText("Obésité morbide 🔴🔴🔴");
-                        interpretationLabel.setStyle("-fx-text-fill: #c0392b; -fx-font-weight: bold;");
+                        // Insertion avec patient_id
+                        String insertSql = "INSERT INTO medical_record (patient_id) VALUES (?)";
+                        try (PreparedStatement insertPs = conn.prepareStatement(insertSql, Statement.RETURN_GENERATED_KEYS)) {
+                            insertPs.setInt(1, currentUserId);
+                            insertPs.executeUpdate();
+                            try (ResultSet generatedKeys = insertPs.getGeneratedKeys()) {
+                                if (generatedKeys.next()) {
+                                    currentMedicalRecordId = generatedKeys.getInt(1);
+                                }
+                            }
+                        }
                     }
-                    return;
                 }
             }
-            imcLabel.setText("--");
-            interpretationLabel.setText("Entrez poids et taille");
-            interpretationLabel.setStyle("-fx-text-fill: #7f8c8d;");
-        } catch (NumberFormatException e) {
-            imcLabel.setText("--");
-            interpretationLabel.setText("Valeurs invalides");
-            interpretationLabel.setStyle("-fx-text-fill: #e74c3c;");
+            System.out.println("MedicalRecord ID: " + currentMedicalRecordId);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            showAlert("Erreur DB", "Erreur medical_record : " + e.getMessage(), Alert.AlertType.ERROR);
         }
     }
 
-    // ============ CRUD PARAMÈTRES MÉDICAUX ============
+    private void calculerIMC() {
+        try {
+            double poids = Double.parseDouble(poidsField.getText());
+            double taille = Double.parseDouble(tailleField.getText());
+            if (taille > 0) {
+                double imc = Math.round((poids / (taille * taille)) * 10.0) / 10.0;
+                imcLabel.setText(String.valueOf(imc));
+
+                if (imc < 18.5) interpretationLabel.setText("Insuffisance pondérale");
+                else if (imc < 25) interpretationLabel.setText("Poids normal");
+                else if (imc < 30) interpretationLabel.setText("Surpoids");
+                else if (imc < 35) interpretationLabel.setText("Obésité modérée");
+                else if (imc < 40) interpretationLabel.setText("Obésité sévère");
+                else interpretationLabel.setText("Obésité morbide");
+            }
+        } catch (NumberFormatException e) {
+            imcLabel.setText("--");
+            interpretationLabel.setText("--");
+        }
+    }
 
     @FXML
     private void ajouterParametre() {
         try {
-            // Vérification des champs
-            if (poidsField.getText().isEmpty() || tailleField.getText().isEmpty() ||
-                    glycemieField.getText().isEmpty() || tensionField.getText().isEmpty()) {
-                showAlert("Erreur", "Tous les champs sont obligatoires", Alert.AlertType.ERROR);
-                return;
-            }
+            ParaMedical p = new ParaMedical();
+            p.setPoids(Double.parseDouble(poidsField.getText()));
+            p.setTaille(Double.parseDouble(tailleField.getText()));
+            p.setGlycemie(Double.parseDouble(glycemieField.getText()));
+            p.setTensionSystolique(tensionField.getText());
+            p.setCreatedAt(LocalDateTime.now());
 
-            ParaMedical paraMedical = new ParaMedical();
-            paraMedical.setPoids(Double.parseDouble(poidsField.getText()));
-            paraMedical.setTaille(Double.parseDouble(tailleField.getText()));
-            paraMedical.setGlycemie(Double.parseDouble(glycemieField.getText()));
-            paraMedical.setTensionSystolique(tensionField.getText());
-            paraMedical.setCreatedAt(LocalDateTime.now());
-            paraMedical.setMedicalRecord(currentMedicalRecord);
+            MedicalRecord mr = new MedicalRecord();
+            mr.setId(currentMedicalRecordId);
+            p.setMedicalRecord(mr);
 
-            paraMedicalService.ajouter(paraMedical);
+            paraMedicalService.ajouter(p);
             rafraichirTableauParametres();
             viderChamps();
-            showAlert("Succès", "Paramètres médicaux ajoutés avec succès", Alert.AlertType.INFORMATION);
-
-        } catch (NumberFormatException e) {
-            showAlert("Erreur", "Veuillez entrer des nombres valides", Alert.AlertType.ERROR);
+            showAlert("Succès", "Paramètres ajoutés", Alert.AlertType.INFORMATION);
         } catch (Exception e) {
-            showAlert("Erreur", "Erreur lors de l'ajout : " + e.getMessage(), Alert.AlertType.ERROR);
+            showAlert("Erreur", e.getMessage(), Alert.AlertType.ERROR);
         }
     }
 
@@ -210,10 +209,9 @@ public class PatientController {
     private void modifierParametre() {
         ParaMedical selected = parametreTable.getSelectionModel().getSelectedItem();
         if (selected == null) {
-            showAlert("Erreur", "Veuillez sélectionner un paramètre à modifier", Alert.AlertType.WARNING);
+            showAlert("Erreur", "Sélectionnez un paramètre", Alert.AlertType.WARNING);
             return;
         }
-
         try {
             selected.setPoids(Double.parseDouble(poidsField.getText()));
             selected.setTaille(Double.parseDouble(tailleField.getText()));
@@ -223,12 +221,9 @@ public class PatientController {
             paraMedicalService.modifier(selected);
             rafraichirTableauParametres();
             viderChamps();
-            showAlert("Succès", "Paramètres modifiés avec succès", Alert.AlertType.INFORMATION);
-
-        } catch (NumberFormatException e) {
-            showAlert("Erreur", "Veuillez entrer des nombres valides", Alert.AlertType.ERROR);
+            showAlert("Succès", "Paramètres modifiés", Alert.AlertType.INFORMATION);
         } catch (Exception e) {
-            showAlert("Erreur", "Erreur lors de la modification : " + e.getMessage(), Alert.AlertType.ERROR);
+            showAlert("Erreur", e.getMessage(), Alert.AlertType.ERROR);
         }
     }
 
@@ -236,23 +231,18 @@ public class PatientController {
     private void supprimerParametre() {
         ParaMedical selected = parametreTable.getSelectionModel().getSelectedItem();
         if (selected == null) {
-            showAlert("Erreur", "Veuillez sélectionner un paramètre à supprimer", Alert.AlertType.WARNING);
+            showAlert("Erreur", "Sélectionnez un paramètre", Alert.AlertType.WARNING);
             return;
         }
-
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-        confirm.setTitle("Confirmation");
-        confirm.setContentText("Voulez-vous vraiment supprimer ces paramètres ?");
-
+        confirm.setContentText("Voulez-vous vraiment supprimer ?");
         if (confirm.showAndWait().get() == ButtonType.OK) {
             paraMedicalService.supprimer(selected.getId());
             rafraichirTableauParametres();
             viderChamps();
-            showAlert("Succès", "Paramètres supprimés avec succès", Alert.AlertType.INFORMATION);
+            showAlert("Succès", "Paramètres supprimés", Alert.AlertType.INFORMATION);
         }
     }
-
-    // ============ RAFRAÎCHISSEMENT ============
 
     @FXML
     private void rafraichirTableaux() {
@@ -262,17 +252,15 @@ public class PatientController {
 
     private void rafraichirTableauParametres() {
         parametresList.clear();
-        parametresList.addAll(paraMedicalService.afficherParMedicalRecord(currentMedicalRecord.getId()));
+        parametresList.addAll(paraMedicalService.afficherParMedicalRecord(currentMedicalRecordId));
         parametreTable.setItems(parametresList);
     }
 
     private void rafraichirTableauPrescriptions() {
         prescriptionsList.clear();
-        prescriptionsList.addAll(prescriptionService.afficherParMedicalRecord(currentMedicalRecord.getId()));
+        prescriptionsList.addAll(prescriptionService.afficherParMedicalRecord(currentMedicalRecordId));
         prescriptionTable.setItems(prescriptionsList);
     }
-
-    // ============ UTILITAIRES ============
 
     private void remplirChamps(ParaMedical p) {
         poidsField.setText(String.valueOf(p.getPoids()));
@@ -289,8 +277,35 @@ public class PatientController {
         tensionField.clear();
         imcLabel.setText("--");
         interpretationLabel.setText("--");
-        interpretationLabel.setStyle("-fx-text-fill: #7f8c8d;");
         parametreTable.getSelectionModel().clearSelection();
+    }
+
+    @FXML
+    private void changerVersMedecin() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/medecin_prescriptions.fxml"));
+            Parent root = loader.load();
+            Stage stage = (Stage) parametreTable.getScene().getWindow();
+            stage.setScene(new Scene(root, 1100, 700));
+            stage.setTitle("VitaHealth - Espace Médecin");
+            stage.show();
+        } catch (Exception e) {
+            e.printStackTrace();
+            showAlert("Erreur", "Impossible de changer d'interface", Alert.AlertType.ERROR);
+        }
+    }
+
+    @FXML
+    private void aPropos() {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("À propos");
+        alert.setContentText("VitaHealth - Gestion des paramètres médicaux");
+        alert.showAndWait();
+    }
+
+    @FXML
+    private void quitter() {
+        Platform.exit();
     }
 
     private void showAlert(String titre, String message, Alert.AlertType type) {
@@ -299,38 +314,5 @@ public class PatientController {
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();
-    }
-
-    // ============ NAVIGATION ============
-
-    @FXML
-    private void changerVersMedecin() {
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/medecin_prescriptions.fxml"));
-            Parent root = loader.load();
-
-            Stage stage = (Stage) parametreTable.getScene().getWindow();
-            stage.setScene(new Scene(root, 1100, 700));
-            stage.setTitle("VitaHealth - Espace Médecin");
-            stage.show();
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            showAlert("Erreur", "Impossible de changer d'interface : " + e.getMessage(), Alert.AlertType.ERROR);
-        }
-    }
-
-    @FXML
-    private void aPropos() {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("À propos");
-        alert.setHeaderText("VitaHealth");
-        alert.setContentText("Application de gestion des paramètres médicaux\nVersion 1.0\n© 2024 VitaHealth");
-        alert.showAndWait();
-    }
-
-    @FXML
-    private void quitter() {
-        Platform.exit();
     }
 }
