@@ -8,8 +8,10 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.MouseEvent;
 import org.example.entities.Commentaire;
 import org.example.entities.Sujet;
+import org.example.entities.Utilisateur;
 import org.example.services.CommentaireService;
 import org.example.services.SujetService;
+import org.example.utils.SessionManager;
 
 import java.net.URL;
 import java.sql.Timestamp;
@@ -21,7 +23,6 @@ public class ForumController implements Initializable {
     // ── Sujets ────────────────────────────────────────────────────────────────
     @FXML private TextField        titreField;
     @FXML private ComboBox<String> categorieCombo;
-    @FXML private TextField        auteurField;
     @FXML private TextArea         contenuArea;
     @FXML private TextField        searchField;
 
@@ -38,7 +39,6 @@ public class ForumController implements Initializable {
     @FXML private TableColumn<Commentaire, String>    colComContenu;
     @FXML private TableColumn<Commentaire, Timestamp> colComDate;
 
-    @FXML private TextField comAuteurField;
     @FXML private TextArea  comContenuArea;
     @FXML private Label     sujetSelectionneLabel;
     @FXML private Label     nbCommentairesLabel;
@@ -50,18 +50,19 @@ public class ForumController implements Initializable {
 
     private Sujet       sujetSelectionne       = null;
     private Commentaire commentaireSelectionne = null;
+    private Utilisateur currentUser = SessionManager.getInstance().getCurrentUser();
 
     @Override
     public void initialize(URL url, ResourceBundle rb) {
         // Colonnes sujets
         colTitre.setCellValueFactory(new PropertyValueFactory<>("titre"));
         colCategorie.setCellValueFactory(new PropertyValueFactory<>("categorie"));
-        colAuteur.setCellValueFactory(new PropertyValueFactory<>("auteur"));
+        colAuteur.setCellValueFactory(new PropertyValueFactory<>("auteurNom"));   // ← Changé ici
         colValid.setCellValueFactory(new PropertyValueFactory<>("valid"));
         colDate.setCellValueFactory(new PropertyValueFactory<>("dateCreation"));
 
         // Colonnes commentaires
-        colComAuteur.setCellValueFactory(new PropertyValueFactory<>("auteur"));
+        colComAuteur.setCellValueFactory(new PropertyValueFactory<>("auteurNom")); // ← Changé ici
         colComContenu.setCellValueFactory(new PropertyValueFactory<>("contenu"));
         colComDate.setCellValueFactory(new PropertyValueFactory<>("dateCreation"));
 
@@ -93,7 +94,6 @@ public class ForumController implements Initializable {
 
         titreField.setText(sujetSelectionne.getTitre());
         categorieCombo.setValue(sujetSelectionne.getCategorie());
-        auteurField.setText(sujetSelectionne.getAuteur());
         contenuArea.setText(sujetSelectionne.getContenu());
 
         chargerCommentaires(sujetSelectionne.getId());
@@ -102,7 +102,7 @@ public class ForumController implements Initializable {
 
     private void chargerCommentaires(int sujetId) {
         commentaireTable.setItems(
-                FXCollections.observableArrayList(commentaireService.getBySujet(sujetId))
+                FXCollections.observableArrayList(commentaireService.getBySujetId(sujetId))
         );
         nbCommentairesLabel.setText("Total : " + commentaireService.countBySujet(sujetId) + " commentaire(s)");
     }
@@ -110,11 +110,16 @@ public class ForumController implements Initializable {
     // ── CRUD Sujets ───────────────────────────────────────────────────────────
     @FXML void ajouterSujet() {
         if (!validerFormulaire()) return;
+        // On utilise l'utilisateur connecté comme auteur
         sujetService.ajouter(new Sujet(
-                titreField.getText(), categorieCombo.getValue(),
-                contenuArea.getText(), auteurField.getText()
+                titreField.getText(),
+                categorieCombo.getValue(),
+                contenuArea.getText(),
+                currentUser.getId(),
+                currentUser.getNom()
         ));
-        effacer(); chargerSujets();
+        effacer();
+        chargerSujets();
         setStatus("✅ Sujet ajouté !");
     }
 
@@ -123,8 +128,8 @@ public class ForumController implements Initializable {
         if (!validerFormulaire()) return;
         sujetSelectionne.setTitre(titreField.getText());
         sujetSelectionne.setCategorie(categorieCombo.getValue());
-        sujetSelectionne.setAuteur(auteurField.getText());
         sujetSelectionne.setContenu(contenuArea.getText());
+        // L'auteur ne change pas, on garde l'ID original
         sujetService.modifier(sujetSelectionne);
         chargerSujets();
         setStatus("✅ Sujet modifié !");
@@ -137,7 +142,8 @@ public class ForumController implements Initializable {
         c.showAndWait().ifPresent(btn -> {
             if (btn == ButtonType.YES) {
                 sujetService.supprimer(sujetSelectionne.getId());
-                effacer(); chargerSujets();
+                effacer();
+                chargerSujets();
                 commentaireTable.getItems().clear();
                 setStatus("🗑️ Sujet supprimé.");
             }
@@ -147,13 +153,15 @@ public class ForumController implements Initializable {
     @FXML void validerSujet() {
         if (sujetSelectionne == null) { alerte("Sélectionnez un sujet."); return; }
         sujetService.valider(sujetSelectionne.getId(), true);
-        chargerSujets(); setStatus("✅ Sujet validé !");
+        chargerSujets();
+        setStatus("✅ Sujet validé !");
     }
 
     @FXML void invaliderSujet() {
         if (sujetSelectionne == null) { alerte("Sélectionnez un sujet."); return; }
         sujetService.valider(sujetSelectionne.getId(), false);
-        chargerSujets(); setStatus("❌ Sujet invalidé.");
+        chargerSujets();
+        setStatus("❌ Sujet invalidé.");
     }
 
     @FXML void rechercher() {
@@ -165,21 +173,26 @@ public class ForumController implements Initializable {
     }
 
     @FXML void effacer() {
-        titreField.clear(); auteurField.clear(); contenuArea.clear();
-        categorieCombo.setValue(null); sujetSelectionne = null;
+        titreField.clear();
+        contenuArea.clear();
+        categorieCombo.setValue(null);
+        sujetSelectionne = null;
         sujetTable.getSelectionModel().clearSelection();
     }
 
     // ── Commentaires ──────────────────────────────────────────────────────────
     @FXML void ajouterCommentaire() {
         if (sujetSelectionne == null) { alerte("Sélectionnez un sujet."); return; }
-        if (comAuteurField.getText().isEmpty() || comContenuArea.getText().isEmpty()) {
-            alerte("Remplissez auteur et commentaire."); return;
+        if (comContenuArea.getText().isEmpty()) {
+            alerte("Écrivez un commentaire."); return;
         }
         commentaireService.ajouter(new Commentaire(
-                comContenuArea.getText(), comAuteurField.getText(), sujetSelectionne.getId()
+                comContenuArea.getText(),
+                currentUser.getId(),
+                sujetSelectionne.getId(),
+                currentUser.getNom()
         ));
-        comAuteurField.clear(); comContenuArea.clear();
+        comContenuArea.clear();
         chargerCommentaires(sujetSelectionne.getId());
         setStatus("✅ Commentaire ajouté !");
     }
@@ -193,9 +206,11 @@ public class ForumController implements Initializable {
 
     // ── Helpers ───────────────────────────────────────────────────────────────
     private boolean validerFormulaire() {
-        if (titreField.getText().isEmpty() || auteurField.getText().isEmpty()
-                || contenuArea.getText().isEmpty() || categorieCombo.getValue() == null) {
-            alerte("Veuillez remplir tous les champs."); return false;
+        if (titreField.getText().isEmpty()
+                || contenuArea.getText().isEmpty()
+                || categorieCombo.getValue() == null) {
+            alerte("Veuillez remplir tous les champs (titre, catégorie, contenu).");
+            return false;
         }
         return true;
     }
@@ -204,5 +219,7 @@ public class ForumController implements Initializable {
         new Alert(Alert.AlertType.WARNING, msg, ButtonType.OK).showAndWait();
     }
 
-    private void setStatus(String msg) { statusLabel.setText(msg); }
+    private void setStatus(String msg) {
+        if (statusLabel != null) statusLabel.setText(msg);
+    }
 }

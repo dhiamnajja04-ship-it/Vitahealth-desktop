@@ -3,47 +3,41 @@ package org.example.entities;
 import java.sql.Timestamp;
 
 public class Commentaire {
-
     private int id;
     private String contenu;
-    private String auteur;
+    private int auteurId;
     private Timestamp dateCreation;
     private int sujetId;
+    private String auteurNom;      // pour affichage
+    private String auteurAvatar;
 
     public Commentaire() {}
 
-    public Commentaire(String contenu, String auteur, int sujetId) {
+    public Commentaire(String contenu, int auteurId, int sujetId) {
+        this(contenu, auteurId, sujetId, "");
+    }
+
+    public Commentaire(String contenu, int auteurId, int sujetId, String auteurNom) {
         this.contenu = contenu;
-        this.auteur = auteur;
+        this.auteurId = auteurId;
         this.sujetId = sujetId;
+        this.auteurNom = auteurNom;
         this.dateCreation = new Timestamp(System.currentTimeMillis());
     }
 
-    public Commentaire(int id, String contenu, String auteur, Timestamp dateCreation, int sujetId) {
-        this.id = id;
-        this.contenu = contenu;
-        this.auteur = auteur;
-        this.dateCreation = dateCreation;
-        this.sujetId = sujetId;
-    }
-
+    // Getters et Setters
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }
-
     public String getContenu() { return contenu; }
     public void setContenu(String contenu) { this.contenu = contenu; }
-
-    public String getAuteur() { return auteur; }
-    public void setAuteur(String auteur) { this.auteur = auteur; }
-
+    public int getAuteurId() { return auteurId; }
+    public void setAuteurId(int auteurId) { this.auteurId = auteurId; }
     public Timestamp getDateCreation() { return dateCreation; }
     public void setDateCreation(Timestamp dateCreation) { this.dateCreation = dateCreation; }
-
     public int getSujetId() { return sujetId; }
     public void setSujetId(int sujetId) { this.sujetId = sujetId; }
-
-    @Override
-    public String toString() {
-        return "Commentaire{id=" + id + ", auteur='" + auteur + "', sujetId=" + sujetId + "}";
-    }
+    public String getAuteurNom() { return auteurNom; }
+    public void setAuteurNom(String auteurNom) { this.auteurNom = auteurNom; }
+    public String getAuteurAvatar() { return auteurAvatar; }
+    public void setAuteurAvatar(String auteurAvatar) { this.auteurAvatar = auteurAvatar; }
 }

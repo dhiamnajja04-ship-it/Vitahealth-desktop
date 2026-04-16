@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.chart.BarChart?>
+<?import javafx.scene.chart.CategoryAxis?>
+<?import javafx.scene.chart.NumberAxis?>
+<?import javafx.scene.chart.PieChart?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox spacing="20" stylesheets="/css/style.css" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1">
+    <padding>
+        <Insets top="20" right="30" bottom="20" left="30" />
+    </padding>
+
+    <Label text="Analytiques de la communauté" styleClass="post-title" />
+
+    <HBox spacing="20">
+        <!-- Graphique circulaire : répartition par catégorie -->
+        <VBox spacing="10" styleClass="widget-card" HBox.hgrow="ALWAYS">
+            <Label text="Répartition des sujets par catégorie" styleClass="widget-title" />
+            <PieChart fx:id="categoryPieChart" prefHeight="250" />
+        </VBox>
+
+        <!-- Graphique en barres : activité mensuelle -->
+        <VBox spacing="10" styleClass="widget-card" HBox.hgrow="ALWAYS">
+            <Label text="Publications par mois" styleClass="widget-title" />
+            <BarChart fx:id="monthlyBarChart" prefHeight="250">
+                <xAxis>
+                    <CategoryAxis label="Mois" />
+                </xAxis>
+                <yAxis>
+                    <NumberAxis label="Nombre de sujets" />
+                </yAxis>
+            </BarChart>
+        </VBox>
+    </HBox>
+
+    <!-- Statistiques supplémentaires -->
+    <HBox spacing="20">
+        <VBox styleClass="stat-card" alignment="CENTER" HBox.hgrow="ALWAYS">
+            <Label text="Taux d'engagement" styleClass="stat-card-title" />
+            <Label fx:id="engagementRateLabel" styleClass="stat-card-value" text="68%" />
+            <Label styleClass="stat-card-sub" text="Likes / vues" />
+        </VBox>
+        <VBox styleClass="stat-card" alignment="CENTER" HBox.hgrow="ALWAYS">
+            <Label text="Temps moyen de réponse" styleClass="stat-card-title" />
+            <Label fx:id="avgResponseTimeLabel" styleClass="stat-card-value" text="2.4h" />
+            <Label styleClass="stat-card-sub" text="Commentaires" />
+        </VBox>
+    </HBox>
+</VBox>
